@@ -167,14 +167,15 @@ app.get("/cron", async (req, res) => {
     }
   }
 
-  if (!success) {
-    Logger.log("----- No exams found to sign up for -----", LogLevel.ERROR)
-  }
-
   Logger.log("Closing browser and terminating job...")
   await browser.close()
 
-  res.send("Cron job finished").end()
+  if (!success) {
+    res.status(404).send("No exams found to sign up for").end()
+    Logger.log("----- No exams found to sign up for -----", LogLevel.ERROR)
+  }
+
+  res.send("Cron job finished successfully").end()
 })
 
 app.listen(process.env.PORT, () => {
