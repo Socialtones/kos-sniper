@@ -147,7 +147,32 @@ app.get("/cron", async (req, res) => {
     if (candidate) {
       Logger.log(`Found a match for ${courseCode} on ${datePart}`)
 
-      const button = await row.$("button.button-component.btn-primary")
+      const available = await row.$("span.available")
+      if (!available) {
+        Logger.log(
+          `No available spots for ${courseCode} on ${datePart}`,
+          LogLevel.WARN
+        )
+        continue
+      }
+
+      await row.click()
+      await page.waitForSelector("button.btn-primary", {
+        visible: true,
+        timeout: 1000,
+      })
+
+      let button
+      const buttons = await page.$$("button.btn-primary")
+
+      for (const btn of buttons) {
+        const text = await btn.evaluate((el: any) => el.textContent.trim())
+
+        if (text === "Přihlásit") {
+          button = btn
+          break
+        }
+      }
 
       if (button) {
         await button.click()
@@ -164,6 +189,12 @@ app.get("/cron", async (req, res) => {
           LogLevel.ERROR
         )
       }
+
+      await row.click()
+      await page.waitForSelector("button.btn-primary", {
+        hidden: true,
+        timeout: 1000,
+      })
     }
   }
 
@@ -173,6 +204,7 @@ app.get("/cron", async (req, res) => {
   if (!success) {
     res.status(404).send("No exams found to sign up for").end()
     Logger.log("----- No exams found to sign up for -----", LogLevel.ERROR)
+    return
   }
 
   res.send("Cron job finished successfully").end()
