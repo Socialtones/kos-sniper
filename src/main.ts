@@ -1,6 +1,8 @@
+import chromium from "@sparticuz/chromium"
 import "dotenv/config"
 import express from "express"
 import puppeteer from "puppeteer"
+import puppeteerCore from "puppeteer-core"
 import { endpoint } from "./utility/endpoints"
 import { Logger, LogLevel } from "./utility/logger"
 
@@ -25,8 +27,23 @@ app.get("/cron", async (req, res) => {
   const courses = JSON.parse(data as string) as Course[]
   Logger.log("Starting browser...")
 
-  const browser = await puppeteer.launch({ headless: true })
-  const page = await browser.newPage()
+  let browser
+  if (process.env.VERCEL_ENV === "production") {
+    const executablePath = await chromium.executablePath()
+    browser = await puppeteerCore.launch({
+      executablePath,
+      args: chromium.args,
+      headless: chromium.headless,
+      defaultViewport: chromium.defaultViewport,
+    })
+  } else {
+    browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    })
+  }
+
+  const page = (await browser.newPage()) as any
   Logger.log("Logging in to KOS...")
 
   await page.goto(endpoint.LOGIN)
@@ -51,13 +68,13 @@ app.get("/cron", async (req, res) => {
   for (const row of rows) {
     const courseCode = await row
       .$('[data-testid="course-code"]')
-      .then((el) => el?.getProperty("textContent"))
-      .then((handle) => handle?.jsonValue())
+      .then((el: any) => el?.getProperty("textContent"))
+      .then((handle: any) => handle?.jsonValue())
 
     const dateRaw = await row
       .$('[data-testid="date"]')
-      .then((el) => el?.getProperty("textContent"))
-      .then((handle) => handle?.jsonValue())
+      .then((el: any) => el?.getProperty("textContent"))
+      .then((handle: any) => handle?.jsonValue())
 
     if (!courseCode || !dateRaw) {
       Logger.log("Exam record is invalid", LogLevel.WARN)
@@ -100,13 +117,13 @@ app.get("/cron", async (req, res) => {
   for (const row of rows) {
     const courseCode = await row
       .$('[data-testid="course-code"]')
-      .then((el) => el?.getProperty("textContent"))
-      .then((handle) => handle?.jsonValue())
+      .then((el: any) => el?.getProperty("textContent"))
+      .then((handle: any) => handle?.jsonValue())
 
     const dateRaw = await row
       .$('[data-testid="date"]')
-      .then((el) => el?.getProperty("textContent"))
-      .then((handle) => handle?.jsonValue())
+      .then((el: any) => el?.getProperty("textContent"))
+      .then((handle: any) => handle?.jsonValue())
 
     if (!courseCode || !dateRaw) {
       continue
