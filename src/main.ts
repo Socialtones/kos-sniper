@@ -176,6 +176,10 @@ app.get("/cron", async (req, res) => {
 
       if (button) {
         await button.click()
+
+        await page.waitForSelector("svg.loading-spinner-md", { visible: true })
+        await page.waitForSelector("svg.loading-spinner-md", { hidden: true })
+
         Logger.log(
           `You should be signed up for ${courseCode} on ${datePart}`,
           LogLevel.SUCCESS
