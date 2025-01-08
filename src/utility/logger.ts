@@ -3,6 +3,7 @@ export enum LogLevel {
   WARN = "WARN",
   ERROR = "ERROR",
   SUCCESS = "SUCCESS",
+  SNIPER = "SNIPER",
 }
 
 export class Logger {
@@ -47,6 +48,13 @@ export class Logger {
         console.log(
           `\x1b[32m[${
             LogLevel.SUCCESS
+          }][${this._getCurrentFormattedTime()}]\x1b[0m ${message}`
+        )
+        break
+      case LogLevel.SNIPER:
+        console.log(
+          `\x1b[35m[${
+            LogLevel.SNIPER
           }][${this._getCurrentFormattedTime()}]\x1b[0m ${message}`
         )
         break
