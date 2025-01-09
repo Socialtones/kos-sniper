@@ -13,9 +13,9 @@
     "@sparticuz/chromium": "^131.0.1",
     "@types/node": "^22.10.5",
     "dotenv": "^16.4.7",
-    "express": "^4.21.2",
     "puppeteer": "^23.11.1",
-    "puppeteer-core": "^23.11.1"
+    "puppeteer-core": "^23.11.1",
+    "redline": "^1.0.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.0"

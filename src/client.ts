@@ -1,5 +1,4 @@
 import chromium from "@sparticuz/chromium"
-import { Request } from "express"
 import puppeteer, { Page } from "puppeteer"
 import puppeteerCore from "puppeteer-core"
 import { Endpoint } from "./utility/endpoints"
@@ -8,6 +7,7 @@ import {
   AfterInitialization,
   AvailableExam,
   Browser,
+  Config,
   ExamStatus,
   SnipeExam,
   Utility,
@@ -21,30 +21,13 @@ export class Sniper {
   private _page!: Page
   private _signedExams = [] as SnipeExam[]
 
-  constructor(private _req: Request) {
-    const { secret, data } = this._req.query
-
-    if (
-      !secret ||
-      !data ||
-      typeof secret !== "string" ||
-      typeof data !== "string"
-    ) {
-      throw new Error("Invalid request")
-    }
-
-    if (!this._validateSecret(secret)) {
-      throw new Error("Invalid secret")
-    }
-
-    this.exams = JSON.parse(data) as SnipeExam[]
-  }
+  constructor(private _config: Config) {}
 
   public async init(): Promise<AfterInitialization> {
     await this._openBrowser()
     await this._openPage()
 
-    Logger.log("----- Sniper initialized -----", LogLevel.SNIPER)
+    // Logger.log("----- Sniper initialized -----", LogLevel.SNIPER)
 
     return {
       browser: this._browser,
@@ -52,16 +35,16 @@ export class Sniper {
     }
   }
 
-  public async login(username: string, password: string): Promise<void> {
-    Logger.log("Logging in to kos.cvut.cz...")
+  public async login(): Promise<void> {
+    // Logger.log("Logging in to kos.cvut.cz...")
 
     if (!this._page) throw new Error("Sniper is not initialized")
-    if (!username || !password)
+    if (!this._config.username || !this._config.password)
       throw new Error("Username or password is missing")
 
     await this._page.goto(Endpoint.LOGIN)
-    await this._page.locator('input[id="username"]').fill(username)
-    await this._page.locator('input[id="password"]').fill(password)
+    await this._page.locator('input[id="username"]').fill(this._config.username)
+    await this._page.locator('input[id="password"]').fill(this._config.password)
 
     await Promise.all([
       this._page.click('button[type="submit"]'),
@@ -71,7 +54,7 @@ export class Sniper {
 
   public async loadExams(): Promise<boolean> {
     await this._page.goto(Endpoint.EXAMS)
-    Logger.log("Loading available exams...")
+    //Logger.log("Loading available exams...")
 
     await this._page.waitForSelector("svg.loading-spinner-md", {
       visible: true,
@@ -79,19 +62,19 @@ export class Sniper {
     await this._page.waitForSelector("svg.loading-spinner-md", { hidden: true })
 
     const rows = await this._page.$$(".row-headline")
-    Logger.log(`Found ${rows.length} available exams`, LogLevel.SNIPER)
+    //Logger.log(`Found ${rows.length} available exams`, LogLevel.SNIPER)
 
     this.availableExams = await Utility.parseAvailableExams(rows)
     this._signedExams = Utility.getAlreadySignedExams(
-      this.exams,
+      this._config.targets,
       this.availableExams
     )
 
-    return this._signedExams.length === this.exams.length
+    return this._signedExams.length === this._config.targets.length
   }
 
   public async snipeExam(): Promise<AvailableExam | null> {
-    for (const exam of this.exams) {
+    for (const exam of this._config.targets) {
       if (this._signedExams.find((e) => e.code === exam.code)) continue
 
       const availableExam = this.availableExams.find(
@@ -99,10 +82,7 @@ export class Sniper {
       )
 
       if (!availableExam) {
-        Logger.log(
-          `No exam with code ${exam.code} is available`,
-          LogLevel.SNIPER
-        )
+        Logger.log(`No exam with code ${exam.code} is available`)
         continue
       }
 
@@ -162,17 +142,8 @@ export class Sniper {
   }
 
   public async destroy(): Promise<void> {
-    Logger.log("Terminating services...")
+    //Logger.log("Terminating services...")
     if (this._browser) await this._browser.close()
-  }
-
-  private _validateSecret(secret: string): boolean {
-    if (!process.env.SECRET) {
-      Logger.log("Secret environment variable is not set!", LogLevel.ERROR)
-      return false
-    }
-
-    return secret === process.env.SECRET
   }
 
   private async _openBrowser(): Promise<void> {
@@ -185,14 +156,14 @@ export class Sniper {
         defaultViewport: chromium.defaultViewport,
       })
 
-      Logger.log("Running in production mode")
+      //Logger.log("Running in production mode")
     } else {
       this._browser = await puppeteer.launch({
         headless: true,
         args: ["--no-sandbox", "--disable-setuid-sandbox"],
       })
 
-      Logger.log("Running in developer mode")
+      //Logger.log("Running in developer mode")
     }
   }
 

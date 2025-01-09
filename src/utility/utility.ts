@@ -31,6 +31,12 @@ export interface LoadedExams {
   isAlreadySigned: boolean
 }
 
+export interface Config {
+  username: string
+  password: string
+  targets: SnipeExam[]
+}
+
 export class Utility {
   public static async parseAvailableExams(
     rows: ElementHandle<Element>[]
